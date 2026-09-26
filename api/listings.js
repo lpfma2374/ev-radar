@@ -2,7 +2,7 @@ const CF_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const CF_DB_ID = process.env.CLOUDFLARE_D1_DATABASE_ID;
 const CF_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
 
-const BRANDS = ["polestar", "byd", "jaguar", "volvo", "xpeng"];
+const BRANDS = ["polestar", "byd", "jaguar", "tesla", "volvo", "xpeng", "renault", "peugeot", "citroen"];
 
 const ORDER = {
   date: "sent_date DESC, price ASC",

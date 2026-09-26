@@ -8,10 +8,10 @@
   { "type": "min", "field": "price", "value": 15000 },
   { "type": "max", "field": "price", "value": 25000 },
   { "type": "nonNull", "field": "brand" },
-  { "type": "enum", "field": "brand", "values": ["polestar", "byd", "jaguar", "volvo", "xpeng"] },
+  { "type": "enum", "field": "brand", "values": ["polestar", "byd", "jaguar", "tesla", "volvo", "xpeng", "renault", "peugeot", "citroen"] },
   { "type": "nonNull", "field": "year", "severity": "warn" },
   { "type": "min", "field": "year", "value": 2019 },
-  { "type": "max", "field": "year", "value": 2026 },
+  { "type": "max", "field": "year", "value": 2024 },
   { "type": "nonNull", "field": "source", "severity": "warn" },
   { "type": "regex", "field": "url", "pattern": "^https://" }
 ]
