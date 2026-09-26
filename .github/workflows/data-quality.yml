@@ -27,7 +27,7 @@ jobs:
           node-version: 20
       - name: Correr expectativas de qualidade dos dados
         env:
-          DATA_QUALITY_URL: https://ev-radar.vercel.app/api/listings
+          DATA_QUALITY_URL: https://ev-radar-sigma.vercel.app/api/listings
           DATA_QUALITY_RECORDS_PATH: listings
         run: node scripts/data-quality.mjs
       - name: Abrir/atualizar issue se falhou
