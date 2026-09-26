@@ -1,0 +1,17 @@
+[
+  { "type": "minCount", "value": 1 },
+  { "type": "maxCount", "value": 1000 },
+  { "type": "nonNull", "field": "url" },
+  { "type": "unique", "field": "url" },
+  { "type": "nonNull", "field": "title" },
+  { "type": "nonNull", "field": "price" },
+  { "type": "min", "field": "price", "value": 15000 },
+  { "type": "max", "field": "price", "value": 25000 },
+  { "type": "nonNull", "field": "brand" },
+  { "type": "enum", "field": "brand", "values": ["polestar", "byd", "jaguar", "volvo", "xpeng"] },
+  { "type": "nonNull", "field": "year", "severity": "warn" },
+  { "type": "min", "field": "year", "value": 2019 },
+  { "type": "max", "field": "year", "value": 2026 },
+  { "type": "nonNull", "field": "source", "severity": "warn" },
+  { "type": "regex", "field": "url", "pattern": "^https://" }
+]

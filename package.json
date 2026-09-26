@@ -1,0 +1,19 @@
+{
+  "name": "ev-radar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EV Radar — dashboard de carros elétricos usados no corredor Porto–Braga (frontend sem framework + serverless functions Vercel + Cloudflare D1)",
+  "scripts": {
+    "dev": "vercel dev",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@vitest/coverage-v8": "^4.1.11",
+    "http-server": "^14.1.1",
+    "jsdom": "^29.1.1",
+    "vitest": "^4.1.11"
+  }
+}
