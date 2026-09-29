@@ -6,7 +6,7 @@ acesso ao **Cloudflare D1** (base de dados `ev-seeker`).
 
 ## Critérios (definidos pelo agente EV_Seeker)
 
-- 100% elétricos, €15.000–€25.000, corredor Porto–Braga
+- 100% elétricos, €15.000–€25.000, corredores Porto–Braga e Setúbal–Almada
 - Polestar 2 (só Standard Range Single Motor), BYD Seal, Jaguar I-Pace, Tesla Model 3 (só SR+) — 2019–2024
 - Renault Mégane E-Tech — 2022–2024 · Peugeot E-2008, Citroën ë-C4/ë-C4 X — 2020–2024
 - Excepções (lançamentos recentes, qualquer ano): Volvo EX30, XPeng G6, XPeng G9

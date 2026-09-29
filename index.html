@@ -94,7 +94,7 @@
 <div class="wrap">
 
   <header>
-    <div class="kicker">Radar de elétricos usados · Corredor Porto–Braga</div>
+    <div class="kicker">Radar de elétricos usados · Porto–Braga · Setúbal–Almada</div>
     <h1>EV <span>Radar</span></h1>
     <p class="sub">Carros elétricos usados entre €15.000 e €25.000, anos 2019–2024: Polestar 2,
     BYD Seal, Jaguar I-Pace, Tesla Model 3 (SR+), Volvo EX30, XPeng G6/G9, Renault Mégane E-Tech,
@@ -148,7 +148,7 @@
         <option value="price_desc">Preço (mais alto)</option>
       </select>
     </div>
-    <button class="apply" id="f-apply">Aplicar</button>
+    <button class="apply" id="f-reset">Limpar filtros</button>
   </div>
 
   <h2 class="section">Data List</h2>
@@ -157,7 +157,7 @@
 
   <footer>
     EV Radar · Dados via Cloudflare D1 · Serverless Vercel<br>
-    Pesquisa diária às 8h em 10 portais · Critérios: elétricos €15.000–25.000 · anos 2019–2024 · corredor Porto–Braga
+    Pesquisa diária às 8h em 10 portais · Critérios: elétricos €15.000–25.000 · anos 2019–2024 · Porto–Braga · Setúbal–Almada
   </footer>
 </div>
 
@@ -200,7 +200,30 @@ async function load() {
     : '<div class="empty">Nenhum anúncio corresponde aos filtros.</div>';
 }
 
-$("f-apply").addEventListener("click", load);
+function resetFilters() {
+  $("f-brand").value = "all";
+  $("f-min").value = "15000";
+  $("f-max").value = "25000";
+  $("f-src").value = "all";
+  $("f-arch").checked = false;
+  $("f-sort").value = "date";
+  load();
+}
+
+// Filtragem em tempo real: selects/toggle/ordenacao reagem a change
+for (const id of ["f-brand", "f-src", "f-arch", "f-sort"]) {
+  $(id).addEventListener("change", load);
+}
+// Precos: debounce de 400ms para nao disparar um fetch por tecla
+let priceTimer = null;
+for (const id of ["f-min", "f-max"]) {
+  $(id).addEventListener("input", () => {
+    clearTimeout(priceTimer);
+    priceTimer = setTimeout(load, 400);
+  });
+}
+// Limpar filtros: repoe os valores de defeito e recarrega
+$("f-reset").addEventListener("click", resetFilters);
 load();
 </script>
 </body>
