@@ -42,29 +42,34 @@ export default async function handler(req, res) {
     const sort = ORDER[sp.get("sort")] ? sp.get("sort") : "date";
     const limit = Math.min(parseInt(sp.get("limit") || "200", 10) || 200, 500);
 
+    const city = (sp.get("city") || "all").trim();
     const where = ["price >= ?", "price <= ?", "archived = ?"];
     const params = [min, max, showArchived ? 1 : 0];
     if (brand !== "all") { where.push("brand = ?"); params.push(brand); }
     if (source !== "all") { where.push("source = ?"); params.push(source); }
     const W = where.join(" AND ");
+    const Wf = city !== "all"
+      ? where.concat(["(location = ? OR location LIKE ?)"]).join(" AND ")
+      : W;
+    const paramsF = city !== "all" ? params.concat([city, city + " (%"]) : params;
 
     const listings = await d1(
       `SELECT url, title, source, price, brand, model, variant, year, mileage, location, sent_date, image_url, archived, archived_date
-       FROM sent_listings WHERE ${W} ORDER BY ${ORDER[sort]} LIMIT ?`,
-      [...params, limit]
+       FROM sent_listings WHERE ${Wf} ORDER BY ${ORDER[sort]} LIMIT ?`,
+      [...paramsF, limit]
     );
 
     const statsRows = await d1(
       `SELECT COUNT(*) AS total, COALESCE(AVG(price),0) AS avg_price,
               COALESCE(MIN(price),0) AS min_price, COALESCE(AVG(year),0) AS avg_year
-       FROM sent_listings WHERE ${W}`,
-      params
+       FROM sent_listings WHERE ${Wf}`,
+      paramsF
     );
     const stats = statsRows[0] || {};
 
     const brandRows = await d1(
-      `SELECT brand, COUNT(*) AS n FROM sent_listings WHERE ${W} GROUP BY brand ORDER BY n DESC`,
-      params
+      `SELECT brand, COUNT(*) AS n FROM sent_listings WHERE ${Wf} GROUP BY brand ORDER BY n DESC`,
+      paramsF
     );
 
     const archRows = await d1(
@@ -76,8 +81,17 @@ export default async function handler(req, res) {
       `SELECT DISTINCT source FROM sent_listings ORDER BY source`
     );
 
+    const cityRows = await d1(
+      `SELECT DISTINCT TRIM(SUBSTR(location, 1,
+              CASE WHEN INSTR(location, ' (') > 0
+                   THEN INSTR(location, ' (') - 1 ELSE LENGTH(location) END)) AS city
+       FROM sent_listings WHERE ${W} ORDER BY city`,
+      params
+    );
+
     return res.status(200).json({
       ok: true,
+      cities: (cityRows || []).map((r) => r.city).filter(Boolean),
       count: listings.length,
       listings,
       stats: {

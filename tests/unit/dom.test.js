@@ -20,6 +20,14 @@ describe('index.html — boot e interação DOM em jsdom', () => {
     expect(srcOptions).toContain('OLX');
   });
 
+  it('popula o filtro de cidade a partir da resposta da API', async () => {
+    const w = await boot(fixtureListings);
+    const cityOptions = [...w.document.getElementById('f-city').options].map((o) => o.value);
+    expect(cityOptions).toContain('all');
+    expect(cityOptions).toContain('Matosinhos');
+    expect(w.document.getElementById('f-city').value).toBe('all');
+  });
+
   it('renderiza preço e marca/modelo nos cartões', async () => {
     const w = await boot(fixtureListings);
     const first = w.document.querySelector('.item');

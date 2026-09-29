@@ -171,9 +171,32 @@
     "archived": 1
   },
   "brands": [
-    { "brand": "jaguar", "n": 4 },
-    { "brand": "polestar", "n": 4 },
-    { "brand": "byd", "n": 2 }
+    {
+      "brand": "jaguar",
+      "n": 4
+    },
+    {
+      "brand": "polestar",
+      "n": 4
+    },
+    {
+      "brand": "byd",
+      "n": 2
+    }
   ],
-  "sources": ["OLX", "Standvirtual"]
+  "sources": [
+    "OLX",
+    "Standvirtual"
+  ],
+  "cities": [
+    "Barcelos",
+    "Braga",
+    "Campanhã",
+    "Gondomar",
+    "Matosinhos",
+    "Matosinhos e Leça da Palmeira",
+    "Porto",
+    "Silvares, Pias, Nogueira e Alvarenga",
+    "Vila Nova de Famalicão"
+  ]
 }

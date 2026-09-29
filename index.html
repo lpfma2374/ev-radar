@@ -134,6 +134,10 @@
       <input type="number" id="f-max" value="25000" min="0" step="500">
     </div>
     <div class="f">
+      <label for="f-city">Cidade</label>
+      <select id="f-city"><option value="all">Todas</option></select>
+    </div>
+    <div class="f">
       <label for="f-src">Portal</label>
       <select id="f-src"><option value="all">Todos</option></select>
     </div>
@@ -166,11 +170,13 @@
 const { esc, formatPrice, formatSource, renderCard } = window.EVShared;
 const $ = id => document.getElementById(id);
 let SOURCES = [];
+let CITIES = [];
 
 async function load() {
   const q = new URLSearchParams({
     brand: $("f-brand").value, min: $("f-min").value, max: $("f-max").value,
-    source: $("f-src").value, archived: $("f-arch").checked ? "1" : "0",
+    source: $("f-src").value, city: $("f-city").value,
+    archived: $("f-arch").checked ? "1" : "0",
     sort: $("f-sort").value, limit: "200"
   });
   let d;
@@ -190,6 +196,14 @@ async function load() {
       $("f-src").appendChild(opt);
     }
   }
+  if (!CITIES.length && d.cities) {
+    CITIES = d.cities;
+    for (const c of d.cities) {
+      const opt = document.createElement("option");
+      opt.value = c; opt.textContent = c;
+      $("f-city").appendChild(opt);
+    }
+  }
   $("s-total").textContent = String(d.stats.total);
   $("s-avg").textContent = formatPrice(d.stats.avg_price);
   $("s-min").textContent = formatPrice(d.stats.min_price);
@@ -205,13 +219,14 @@ function resetFilters() {
   $("f-min").value = "15000";
   $("f-max").value = "25000";
   $("f-src").value = "all";
+  $("f-city").value = "all";
   $("f-arch").checked = false;
   $("f-sort").value = "date";
   load();
 }
 
 // Filtragem em tempo real: selects/toggle/ordenacao reagem a change
-for (const id of ["f-brand", "f-src", "f-arch", "f-sort"]) {
+for (const id of ["f-brand", "f-city", "f-src", "f-arch", "f-sort"]) {
   $(id).addEventListener("change", load);
 }
 // Precos: debounce de 400ms para nao disparar um fetch por tecla
