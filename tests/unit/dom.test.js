@@ -23,8 +23,7 @@ describe('index.html — boot e interação DOM em jsdom', () => {
   it('popula o filtro de cidade a partir da resposta da API', async () => {
     const w = await boot(fixtureListings);
     const cityOptions = [...w.document.getElementById('f-city').options].map((o) => o.value);
-    expect(cityOptions).toContain('all');
-    expect(cityOptions).toContain('Matosinhos');
+    expect(cityOptions).toEqual(['all', 'Porto', 'Braga', 'Almada', 'Setúbal']);
     expect(w.document.getElementById('f-city').value).toBe('all');
   });
 

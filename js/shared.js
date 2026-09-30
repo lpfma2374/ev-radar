@@ -61,8 +61,10 @@
         </a>`
       : `<div class="photo photo-empty" aria-hidden="true"><span>Sem foto</span></div>`;
     const tagsHTML = renderTags(x);
+    // Descritivo "localidade (cidade)"; sem cidade reconhecida mostra a localizacao original
+    const place = x.city ? `${x.locality || x.city} (${x.city})` : x.location;
     const meta = [
-      x.location ? "📍 " + esc(x.location) : "",
+      place ? "📍 " + esc(place) : "",
       x.year ? esc(x.year) : "",
       formatKm(x.mileage)
     ].filter(Boolean).join(" · ");

@@ -100,6 +100,13 @@ describe('renderCard — listing card', () => {
     archived: 0
   };
 
+  it('mostra o descritivo "localidade (cidade)" quando a API envia a cidade', () => {
+    const html = S.renderCard({ ...base, location: 'Charneca de Caparica e Sobreda (Setúbal)', locality: 'Charneca de Caparica e Sobreda', city: 'Almada' });
+    expect(html).toContain('Charneca de Caparica e Sobreda (Almada)');
+    const bare = S.renderCard({ ...base, location: 'Braga', locality: 'Braga', city: 'Braga' });
+    expect(bare).toContain('Braga (Braga)');
+  });
+
   it('renders brand, model, price, meta and link', () => {
     const html = S.renderCard(base);
     expect(html).toContain('Jaguar i-pace');

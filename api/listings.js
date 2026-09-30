@@ -4,6 +4,22 @@ const CF_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
 
 const BRANDS = ["polestar", "byd", "jaguar", "tesla", "volvo", "xpeng", "renault", "peugeot", "citroen"];
 
+// Filtro "Cidade": apenas os concelhos pesquisados pelo scraper.
+// A localizacao vem como "localidade (distrito)"; as freguesias de Almada
+// chegam marcadas como (Setúbal), por isso sao reclassificadas aqui.
+const CITIES = ["Porto", "Braga", "Almada", "Setúbal"];
+const ALMADA_TERMS = ["Almada", "Caparica", "Sobreda", "Trafaria", "Laranjeiro", "Feijó", "Cova da Piedade", "Pragal", "Cacilhas"];
+const CITY_EXPR = `CASE
+  WHEN (location LIKE '%(Setúbal)' OR location = 'Almada')
+       AND (${ALMADA_TERMS.map(t => `location LIKE '%${t}%'`).join(" OR ")}) THEN 'Almada'
+  WHEN location LIKE '%(Porto)' OR location = 'Porto' THEN 'Porto'
+  WHEN location LIKE '%(Braga)' OR location = 'Braga' THEN 'Braga'
+  WHEN location LIKE '%(Setúbal)' OR location = 'Setúbal' THEN 'Setúbal'
+  ELSE NULL END`;
+
+// "Custóias, Leça do Balio e Guifões (Porto)" -> "Custóias, Leça do Balio e Guifões"
+const localityOf = (loc) => String(loc || "").replace(/\s*\([^()]*\)\s*$/, "").trim();
+
 const ORDER = {
   date: "sent_date DESC, price ASC",
   price_asc: "price ASC",
@@ -42,19 +58,19 @@ export default async function handler(req, res) {
     const sort = ORDER[sp.get("sort")] ? sp.get("sort") : "date";
     const limit = Math.min(parseInt(sp.get("limit") || "200", 10) || 200, 500);
 
-    const city = (sp.get("city") || "all").trim();
+    const city = CITIES.includes((sp.get("city") || "").trim()) ? sp.get("city").trim() : "all";
     const where = ["price >= ?", "price <= ?", "archived = ?"];
     const params = [min, max, showArchived ? 1 : 0];
     if (brand !== "all") { where.push("brand = ?"); params.push(brand); }
     if (source !== "all") { where.push("source = ?"); params.push(source); }
     const W = where.join(" AND ");
     const Wf = city !== "all"
-      ? where.concat(["(location = ? OR location LIKE ?)"]).join(" AND ")
+      ? where.concat([`(${CITY_EXPR}) = ?`]).join(" AND ")
       : W;
-    const paramsF = city !== "all" ? params.concat([city, city + " (%"]) : params;
+    const paramsF = city !== "all" ? params.concat([city]) : params;
 
     const listings = await d1(
-      `SELECT url, title, source, price, brand, model, variant, year, mileage, location, sent_date, image_url, archived, archived_date
+      `SELECT url, title, source, price, brand, model, variant, year, mileage, location, (${CITY_EXPR}) AS city, sent_date, image_url, archived, archived_date
        FROM sent_listings WHERE ${Wf} ORDER BY ${ORDER[sort]} LIMIT ?`,
       [...paramsF, limit]
     );
@@ -81,19 +97,12 @@ export default async function handler(req, res) {
       `SELECT DISTINCT source FROM sent_listings ORDER BY source`
     );
 
-    const cityRows = await d1(
-      `SELECT DISTINCT TRIM(SUBSTR(location, 1,
-              CASE WHEN INSTR(location, ' (') > 0
-                   THEN INSTR(location, ' (') - 1 ELSE LENGTH(location) END)) AS city
-       FROM sent_listings WHERE ${W} ORDER BY city`,
-      params
-    );
 
     return res.status(200).json({
       ok: true,
-      cities: (cityRows || []).map((r) => r.city).filter(Boolean),
+      cities: CITIES,
       count: listings.length,
-      listings,
+      listings: listings.map((x) => ({ ...x, locality: localityOf(x.location) || x.city || "" })),
       stats: {
         total: stats.total || 0,
         avg_price: Math.round(stats.avg_price || 0),
