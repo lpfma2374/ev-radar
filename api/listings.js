@@ -20,11 +20,15 @@ const CITY_EXPR = `CASE
 // "Custóias, Leça do Balio e Guifões (Porto)" -> "Custóias, Leça do Balio e Guifões"
 const localityOf = (loc) => String(loc || "").replace(/\s*\([^()]*\)\s*$/, "").trim();
 
-const ORDER = {
-  date: "sent_date DESC, price ASC",
-  price_asc: "price ASC",
-  price_desc: "price DESC"
-};
+// Uma unica query D1 por pedido (antes eram 5 sequenciais). A tabela e pequena
+// e so muda uma vez por dia, por isso a filtragem/estatisticas fazem-se em memoria.
+const ALL_SQL = `SELECT url, title, source, price, brand, model, variant, year, mileage, location,
+  (${CITY_EXPR}) AS city, sent_date, image_url, archived, archived_date
+  FROM sent_listings ORDER BY sent_date DESC, price ASC`;
+
+// Cache em memoria da instancia quente da funcao (evita ida ao D1 em pedidos seguidos)
+const MEM_TTL_MS = 30_000;
+let memCache = { at: 0, rows: null };
 
 async function d1(sql, params = []) {
   const r = await fetch(
@@ -43,77 +47,79 @@ async function d1(sql, params = []) {
   return (j.result && j.result[0] && j.result[0].results) || [];
 }
 
+async function allRows() {
+  if (memCache.rows && Date.now() - memCache.at < MEM_TTL_MS) return { rows: memCache.rows, hit: true };
+  const rows = (await d1(ALL_SQL)).map((x) => ({ ...x, locality: localityOf(x.location) || x.city || "" }));
+  memCache = { at: Date.now(), rows };
+  return { rows, hit: false };
+}
+
+const SORTS = {
+  date: (a, b) => String(b.sent_date || "").localeCompare(String(a.sent_date || "")) || (a.price - b.price),
+  price_asc: (a, b) => a.price - b.price,
+  price_desc: (a, b) => b.price - a.price
+};
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Cache-Control", "no-store");
   if (req.method !== "GET") return res.status(405).json({ error: "GET only" });
 
   try {
+    const t0 = Date.now();
+    const { rows, hit } = await allRows();
+    const tD1 = Date.now() - t0;
     const sp = new URL(req.url, `https://${req.headers.host || "localhost"}`).searchParams;
+
+    // CDN da Vercel serve a resposta durante 60s e revalida em background ate 5 min
+    res.setHeader("Cache-Control", "public, max-age=0, s-maxage=60, stale-while-revalidate=300");
+    res.setHeader("Server-Timing", `d1;dur=${tD1};desc="${hit ? "mem-hit" : "d1"}"`);
+
+    const sources = [...new Set(rows.map((r) => r.source).filter(Boolean))].sort();
+    const archivedTotal = rows.filter((r) => r.archived === 1).length;
+
+    // Modo usado pelo frontend: devolve o dataset completo, filtros aplicados no browser
+    if (sp.get("all") === "1") {
+      return res.status(200).json({ ok: true, cities: CITIES, sources, count: rows.length, listings: rows });
+    }
+
+    // Modo compativel (data-quality, integracoes): mesma semantica dos filtros anteriores
     const min = Math.max(0, parseInt(sp.get("min") || "15000", 10) || 15000);
     const max = Math.min(100000, parseInt(sp.get("max") || "25000", 10) || 25000);
     const brand = BRANDS.includes(sp.get("brand")) ? sp.get("brand") : "all";
     const source = sp.get("source") || "all";
     const showArchived = sp.get("archived") === "1";
-    const sort = ORDER[sp.get("sort")] ? sp.get("sort") : "date";
+    const sort = SORTS[sp.get("sort")] ? sp.get("sort") : "date";
     const limit = Math.min(parseInt(sp.get("limit") || "200", 10) || 200, 500);
-
     const city = CITIES.includes((sp.get("city") || "").trim()) ? sp.get("city").trim() : "all";
-    const where = ["price >= ?", "price <= ?", "archived = ?"];
-    const params = [min, max, showArchived ? 1 : 0];
-    if (brand !== "all") { where.push("brand = ?"); params.push(brand); }
-    if (source !== "all") { where.push("source = ?"); params.push(source); }
-    const W = where.join(" AND ");
-    const Wf = city !== "all"
-      ? where.concat([`(${CITY_EXPR}) = ?`]).join(" AND ")
-      : W;
-    const paramsF = city !== "all" ? params.concat([city]) : params;
 
-    const listings = await d1(
-      `SELECT url, title, source, price, brand, model, variant, year, mileage, location, (${CITY_EXPR}) AS city, sent_date, image_url, archived, archived_date
-       FROM sent_listings WHERE ${Wf} ORDER BY ${ORDER[sort]} LIMIT ?`,
-      [...paramsF, limit]
-    );
+    const filtered = rows.filter((x) =>
+      x.price >= min && x.price <= max && x.archived === (showArchived ? 1 : 0) &&
+      (brand === "all" || x.brand === brand) &&
+      (source === "all" || x.source === source) &&
+      (city === "all" || x.city === city)
+    ).sort(SORTS[sort]);
 
-    const statsRows = await d1(
-      `SELECT COUNT(*) AS total, COALESCE(AVG(price),0) AS avg_price,
-              COALESCE(MIN(price),0) AS min_price, COALESCE(AVG(year),0) AS avg_year
-       FROM sent_listings WHERE ${Wf}`,
-      paramsF
-    );
-    const stats = statsRows[0] || {};
-
-    const brandRows = await d1(
-      `SELECT brand, COUNT(*) AS n FROM sent_listings WHERE ${Wf} GROUP BY brand ORDER BY n DESC`,
-      paramsF
-    );
-
-    const archRows = await d1(
-      `SELECT COUNT(*) AS archived FROM sent_listings WHERE archived = 1`
-    );
-    const archivedTotal = (archRows[0] || {}).archived || 0;
-
-    const sources = await d1(
-      `SELECT DISTINCT source FROM sent_listings ORDER BY source`
-    );
-
+    const prices = filtered.map((x) => x.price);
+    const brandCount = {};
+    for (const x of filtered) brandCount[x.brand] = (brandCount[x.brand] || 0) + 1;
 
     return res.status(200).json({
       ok: true,
       cities: CITIES,
-      count: listings.length,
-      listings: listings.map((x) => ({ ...x, locality: localityOf(x.location) || x.city || "" })),
+      count: Math.min(filtered.length, limit),
+      listings: filtered.slice(0, limit),
       stats: {
-        total: stats.total || 0,
-        avg_price: Math.round(stats.avg_price || 0),
-        min_price: stats.min_price || 0,
-        avg_year: Math.round(stats.avg_year || 0),
+        total: filtered.length,
+        avg_price: prices.length ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0,
+        min_price: prices.length ? Math.min(...prices) : 0,
+        avg_year: filtered.length ? Math.round(filtered.reduce((a, x) => a + (x.year || 0), 0) / filtered.length) : 0,
         archived: archivedTotal
       },
-      brands: brandRows.map(b => ({ brand: b.brand, n: b.n })),
-      sources: sources.map(s => s.source)
+      brands: Object.entries(brandCount).sort((a, b) => b[1] - a[1]).map(([b, n]) => ({ brand: b, n })),
+      sources
     });
   } catch (e) {
+    res.setHeader("Cache-Control", "no-store");
     return res.status(500).json({ ok: false, error: String(e && e.message || e) });
   }
 }

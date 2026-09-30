@@ -85,7 +85,39 @@
       </article>`;
   };
 
+  // Filtragem, ordenacao e estatisticas em memoria (sem ida a rede por filtro)
+  const SORTS = {
+    date: (a, b) => String(b.sent_date || "").localeCompare(String(a.sent_date || "")) || (a.price - b.price),
+    price_asc: (a, b) => a.price - b.price,
+    price_desc: (a, b) => b.price - a.price
+  };
+
+  const applyFilters = (rows, f) => {
+    const min = Number(f.min) || 0;
+    const max = f.max === "" || f.max == null ? Infinity : Number(f.max);
+    const arch = f.archived ? 1 : 0;
+    return (rows || []).filter((x) =>
+      Number(x.price) >= min && Number(x.price) <= max &&
+      Number(x.archived || 0) === arch &&
+      (!f.brand || f.brand === "all" || x.brand === f.brand) &&
+      (!f.source || f.source === "all" || x.source === f.source) &&
+      (!f.city || f.city === "all" || x.city === f.city)
+    ).sort(SORTS[f.sort] || SORTS.date);
+  };
+
+  const computeStats = (filtered, all) => {
+    const prices = filtered.map((x) => Number(x.price)).filter((p) => !Number.isNaN(p));
+    return {
+      total: filtered.length,
+      avg_price: prices.length ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0,
+      min_price: prices.length ? Math.min(...prices) : 0,
+      archived: (all || []).filter((x) => Number(x.archived) === 1).length
+    };
+  };
+
   return {
+    applyFilters,
+    computeStats,
     esc,
     formatPrice,
     formatSource,

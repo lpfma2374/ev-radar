@@ -130,3 +130,36 @@ describe('renderCard — listing card', () => {
     expect(html).toContain('&lt;script&gt;');
   });
 });
+
+describe('applyFilters / computeStats', () => {
+  const rows = [
+    { price: 20000, archived: 0, brand: 'byd', source: 'olx', city: 'Porto', sent_date: '2026-09-28' },
+    { price: 18000, archived: 0, brand: 'byd', source: 'olx', city: 'Porto', sent_date: '2026-09-28' },
+    { price: 24000, archived: 0, brand: 'tesla', source: 'standvirtual', city: 'Almada', sent_date: '2026-09-29' },
+    { price: 30000, archived: 0, brand: 'tesla', source: 'olx', city: 'Braga', sent_date: '2026-09-29' },
+    { price: 19000, archived: 1, brand: 'byd', source: 'olx', city: 'Porto', sent_date: '2026-09-20' }
+  ];
+  const base = { brand: 'all', source: 'all', city: 'all', min: '15000', max: '25000', archived: false, sort: 'date' };
+
+  it('aplica preço e exclui arquivados por defeito, ordenando por data e preço', () => {
+    const out = S.applyFilters(rows, base);
+    expect(out.map((x) => x.price)).toEqual([24000, 18000, 20000]);
+  });
+
+  it('combina marca, portal e cidade', () => {
+    expect(S.applyFilters(rows, { ...base, brand: 'byd', city: 'Porto' })).toHaveLength(2);
+    expect(S.applyFilters(rows, { ...base, source: 'standvirtual' })).toHaveLength(1);
+    expect(S.applyFilters(rows, { ...base, city: 'Setúbal' })).toHaveLength(0);
+  });
+
+  it('ordena por preço e mostra só arquivados quando pedido', () => {
+    expect(S.applyFilters(rows, { ...base, sort: 'price_desc' })[0].price).toBe(24000);
+    expect(S.applyFilters(rows, { ...base, archived: true })).toHaveLength(1);
+  });
+
+  it('calcula estatísticas sobre os filtrados e arquivados sobre o total', () => {
+    const f = S.applyFilters(rows, base);
+    expect(S.computeStats(f, rows)).toEqual({ total: 3, avg_price: 20667, min_price: 18000, archived: 1 });
+    expect(S.computeStats([], rows)).toEqual({ total: 0, avg_price: 0, min_price: 0, archived: 1 });
+  });
+});

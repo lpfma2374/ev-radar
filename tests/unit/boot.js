@@ -13,6 +13,7 @@ const bodyHtml = readFileSync(`${root}/index.html`, 'utf8')
 
 export async function boot(listingsResponse = fixtureListings, { failApi = false } = {}) {
   document.body.innerHTML = bodyHtml;
+  try { localStorage.clear(); } catch (_) {}
   vi.resetModules();
   vi.stubGlobal('fetch', vi.fn(async () => ({
     ok: !failApi,
@@ -26,5 +27,5 @@ export async function boot(listingsResponse = fixtureListings, { failApi = false
     eval(scriptMatch[1]);
   }
   await new Promise((r) => setTimeout(r, 20));
-  return { document, Event, fetch: global.fetch };
+  return { document, Event, fetch: global.fetch, flush: () => new Promise((r) => setTimeout(r, 150)) };
 }

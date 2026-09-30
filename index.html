@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preload" href="/api/listings?all=1" as="fetch" crossorigin="anonymous">
 <title>EV Radar — Elétricos usados Porto–Braga</title>
 <style>
   :root {
@@ -56,7 +57,8 @@
   h2.section { font-size: 24px; font-weight: 700; letter-spacing: -.01em; margin: 38px 0 6px; }
   p.section-sub { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
   .list { display: flex; flex-direction: column; gap: 12px; }
-  .item { background: var(--card); border-radius: var(--radius); padding: 12px;
+  .item { content-visibility: auto; contain-intrinsic-size: auto 140px;
+    background: var(--card); border-radius: var(--radius); padding: 12px;
     box-shadow: 0 1px 3px rgba(0,0,0,.05); display: grid;
     grid-template-columns: 156px minmax(0, 1fr) auto; gap: 16px; align-items: center; }
   .photo { width: 156px; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden;
@@ -167,51 +169,68 @@
 
 <script src="js/shared.js"></script>
 <script>
-const { esc, formatPrice, formatSource, renderCard } = window.EVShared;
+const { formatPrice, formatSource, renderCard, applyFilters, computeStats } = window.EVShared;
 const $ = id => document.getElementById(id);
-let SOURCES = [];
-let CITIES = [];
+const CACHE_KEY = "ev-radar:all:v1";
+const LIMIT = 200;
+let ALL = null;
 
-async function load() {
-  const q = new URLSearchParams({
-    brand: $("f-brand").value, min: $("f-min").value, max: $("f-max").value,
-    source: $("f-src").value, city: $("f-city").value,
-    archived: $("f-arch").checked ? "1" : "0",
-    sort: $("f-sort").value, limit: "200"
-  });
-  let d;
-  try {
-    const r = await fetch("/api/listings?" + q.toString());
-    d = await r.json();
-    if (!d.ok) throw new Error(d.error || "erro");
-  } catch (e) {
-    $("count-sub").textContent = "Erro ao carregar dados: " + e.message;
-    return;
+const readFilters = () => ({
+  brand: $("f-brand").value, min: $("f-min").value, max: $("f-max").value,
+  source: $("f-src").value, city: $("f-city").value,
+  archived: $("f-arch").checked, sort: $("f-sort").value
+});
+
+function fillSelect(id, values, label) {
+  const sel = $(id);
+  const current = sel.value;
+  sel.length = 1; // mantem a opcao "Todas/Todos"
+  for (const v of values) {
+    const opt = document.createElement("option");
+    opt.value = v; opt.textContent = label ? label(v) : v;
+    sel.appendChild(opt);
   }
-  if (!SOURCES.length && d.sources) {
-    SOURCES = d.sources;
-    for (const s of d.sources) {
-      const opt = document.createElement("option");
-      opt.value = s; opt.textContent = formatSource(s);
-      $("f-src").appendChild(opt);
-    }
-  }
-  if (!CITIES.length && d.cities) {
-    CITIES = d.cities;
-    for (const c of d.cities) {
-      const opt = document.createElement("option");
-      opt.value = c; opt.textContent = c;
-      $("f-city").appendChild(opt);
-    }
-  }
-  $("s-total").textContent = String(d.stats.total);
-  $("s-avg").textContent = formatPrice(d.stats.avg_price);
-  $("s-min").textContent = formatPrice(d.stats.min_price);
-  $("s-arch").textContent = String(d.stats.archived);
-  $("count-sub").textContent = d.count + (d.count === 1 ? " anúncio corresponde" : " anúncios correspondem") + " aos filtros";
-  $("list").innerHTML = d.listings.length
-    ? d.listings.map(renderCard).join("")
+  sel.value = [...sel.options].some(o => o.value === current) ? current : "all";
+}
+
+// Render so a partir da memoria: filtros e ordenacao sao instantaneos
+function render() {
+  if (!ALL) return;
+  const filtered = applyFilters(ALL, readFilters());
+  const shown = filtered.slice(0, LIMIT);
+  const st = computeStats(filtered, ALL);
+  $("s-total").textContent = String(st.total);
+  $("s-avg").textContent = formatPrice(st.avg_price);
+  $("s-min").textContent = formatPrice(st.min_price);
+  $("s-arch").textContent = String(st.archived);
+  $("count-sub").textContent = shown.length + (shown.length === 1 ? " anúncio corresponde" : " anúncios correspondem") + " aos filtros";
+  $("list").innerHTML = shown.length
+    ? shown.map(renderCard).join("")
     : '<div class="empty">Nenhum anúncio corresponde aos filtros.</div>';
+}
+
+function useData(d) {
+  ALL = d.listings || [];
+  const sources = d.sources && d.sources.length ? d.sources : [...new Set(ALL.map(x => x.source).filter(Boolean))].sort();
+  fillSelect("f-src", sources, formatSource);
+  fillSelect("f-city", d.cities || []);
+  render();
+}
+
+// Stale-while-revalidate: mostra logo a ultima copia guardada e actualiza em background
+async function load() {
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); } catch (_) {}
+  if (cached && cached.listings) useData(cached);
+  try {
+    const r = await fetch("/api/listings?all=1");
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || "erro");
+    useData(d);
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(d)); } catch (_) {}
+  } catch (e) {
+    $("count-sub").textContent = "Erro ao carregar dados: " + e.message + (ALL ? " (a mostrar a última cópia guardada)" : "");
+  }
 }
 
 function resetFilters() {
@@ -222,22 +241,20 @@ function resetFilters() {
   $("f-city").value = "all";
   $("f-arch").checked = false;
   $("f-sort").value = "date";
-  load();
+  render();
 }
 
-// Filtragem em tempo real: selects/toggle/ordenacao reagem a change
+// Filtragem em tempo real, sem pedidos a rede
 for (const id of ["f-brand", "f-city", "f-src", "f-arch", "f-sort"]) {
-  $(id).addEventListener("change", load);
+  $(id).addEventListener("change", render);
 }
-// Precos: debounce de 400ms para nao disparar um fetch por tecla
 let priceTimer = null;
 for (const id of ["f-min", "f-max"]) {
   $(id).addEventListener("input", () => {
     clearTimeout(priceTimer);
-    priceTimer = setTimeout(load, 400);
+    priceTimer = setTimeout(render, 120);
   });
 }
-// Limpar filtros: repoe os valores de defeito e recarrega
 $("f-reset").addEventListener("click", resetFilters);
 load();
 </script>

@@ -16,7 +16,9 @@
       "sent_date": "2026-09-26",
       "image_url": "https://images.example.com/ipace1.jpg",
       "archived": 0,
-      "archived_date": null
+      "archived_date": null,
+      "city": "Porto",
+      "locality": "Silvares, Pias, Nogueira e Alvarenga"
     },
     {
       "url": "https://www.standvirtual.com/carros/anuncio/jaguar-i-pace-black-ID8Q2.html",
@@ -29,10 +31,12 @@
       "year": 2019,
       "mileage": 78000,
       "location": "Campanhã (Porto)",
-      "sent_date": "2026-09-26",
+      "sent_date": "2026-09-25",
       "image_url": "https://images.example.com/ipace2.jpg",
       "archived": 0,
-      "archived_date": null
+      "archived_date": null,
+      "city": "Porto",
+      "locality": "Campanhã"
     },
     {
       "url": "https://www.standvirtual.com/carros/anuncio/polestar-2-standard-range-ID8Q3.html",
@@ -48,7 +52,9 @@
       "sent_date": "2026-09-25",
       "image_url": "",
       "archived": 0,
-      "archived_date": null
+      "archived_date": null,
+      "city": "Porto",
+      "locality": "Matosinhos"
     },
     {
       "url": "https://www.olx.pt/d/anuncio/polestar-2-single-motor-ID8Q4.html",
@@ -64,7 +70,9 @@
       "sent_date": "2026-09-25",
       "image_url": "https://images.example.com/polestar2.jpg",
       "archived": 0,
-      "archived_date": null
+      "archived_date": null,
+      "city": "Braga",
+      "locality": "Braga"
     },
     {
       "url": "https://www.standvirtual.com/carros/anuncio/jaguar-i-pace-hse-ID8Q5.html",
@@ -80,7 +88,9 @@
       "sent_date": "2026-09-24",
       "image_url": "",
       "archived": 0,
-      "archived_date": null
+      "archived_date": null,
+      "city": "Porto",
+      "locality": "Matosinhos e Leça da Palmeira"
     },
     {
       "url": "https://www.standvirtual.com/carros/anuncio/byd-seal-excellence-ID8Q6.html",
@@ -96,7 +106,9 @@
       "sent_date": "2026-09-24",
       "image_url": "https://images.example.com/seal.jpg",
       "archived": 0,
-      "archived_date": null
+      "archived_date": null,
+      "city": "Braga",
+      "locality": "Vila Nova de Famalicão"
     },
     {
       "url": "https://www.standvirtual.com/carros/anuncio/polestar-2-ID8Q7.html",
@@ -112,7 +124,9 @@
       "sent_date": "2026-09-23",
       "image_url": "",
       "archived": 0,
-      "archived_date": null
+      "archived_date": null,
+      "city": "Porto",
+      "locality": "Porto"
     },
     {
       "url": "https://www.standvirtual.com/carros/anuncio/jaguar-i-pace-s-ID8Q8.html",
@@ -128,7 +142,9 @@
       "sent_date": "2026-09-22",
       "image_url": "https://images.example.com/ipace3.jpg",
       "archived": 0,
-      "archived_date": null
+      "archived_date": null,
+      "city": "Braga",
+      "locality": "Braga"
     },
     {
       "url": "https://www.standvirtual.com/carros/anuncio/polestar-2-standard-ID8Q9.html",
@@ -144,7 +160,9 @@
       "sent_date": "2026-09-21",
       "image_url": "",
       "archived": 0,
-      "archived_date": null
+      "archived_date": null,
+      "city": "Porto",
+      "locality": "Gondomar"
     },
     {
       "url": "https://www.olx.pt/d/anuncio/byd-seal-design-ID8Q10.html",
@@ -160,7 +178,27 @@
       "sent_date": "2026-09-20",
       "image_url": "https://images.example.com/seal2.jpg",
       "archived": 0,
-      "archived_date": null
+      "archived_date": null,
+      "city": "Braga",
+      "locality": "Barcelos"
+    },
+    {
+      "url": "https://www.standvirtual.com/carros/anuncio/arquivado-1.html",
+      "title": "Anúncio arquivado",
+      "source": "Standvirtual",
+      "price": 21000,
+      "brand": "jaguar",
+      "model": "i-pace",
+      "variant": "EV400 SE",
+      "year": 2020,
+      "mileage": 62000,
+      "location": "Silvares, Pias, Nogueira e Alvarenga (Porto)",
+      "sent_date": "2026-09-26",
+      "image_url": "https://images.example.com/ipace1.jpg",
+      "archived": 1,
+      "archived_date": "2026-09-27",
+      "city": "Porto",
+      "locality": "Silvares, Pias, Nogueira e Alvarenga"
     }
   ],
   "stats": {

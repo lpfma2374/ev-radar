@@ -7,7 +7,7 @@ describe('index.html — boot e interação DOM em jsdom', () => {
     const w = await boot(fixtureListings);
     expect(w.document.querySelectorAll('.item')).toHaveLength(10);
     expect(w.document.getElementById('s-total').textContent).toBe('10');
-    expect(w.document.getElementById('s-avg').textContent).toContain('20.839');
+    expect(w.document.getElementById('s-avg').textContent).toContain('21.244');
     expect(w.document.getElementById('s-min').textContent).toContain('17.500');
     expect(w.document.getElementById('s-arch').textContent).toBe('1');
     expect(w.document.getElementById('count-sub').textContent).toContain('10 anúncios correspondem');
@@ -25,6 +25,41 @@ describe('index.html — boot e interação DOM em jsdom', () => {
     const cityOptions = [...w.document.getElementById('f-city').options].map((o) => o.value);
     expect(cityOptions).toEqual(['all', 'Porto', 'Braga', 'Almada', 'Setúbal']);
     expect(w.document.getElementById('f-city').value).toBe('all');
+  });
+
+  it('pede o dataset completo uma única vez e filtra em memória', async () => {
+    const w = await boot(fixtureListings);
+    expect(w.fetch).toHaveBeenCalledTimes(1);
+    expect(w.fetch.mock.calls[0][0]).toContain('all=1');
+    const sel = w.document.getElementById('f-city');
+    sel.value = 'Braga';
+    sel.dispatchEvent(new w.Event('change'));
+    expect(w.document.querySelectorAll('.item')).toHaveLength(4);
+    expect(w.document.getElementById('s-total').textContent).toBe('4');
+    const brand = w.document.getElementById('f-brand');
+    brand.value = 'byd';
+    brand.dispatchEvent(new w.Event('change'));
+    expect(w.document.querySelectorAll('.item')).toHaveLength(2);
+    expect(w.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('filtro de preço aplica-se localmente com debounce', async () => {
+    const w = await boot(fixtureListings);
+    const max = w.document.getElementById('f-max');
+    max.value = '20000';
+    max.dispatchEvent(new w.Event('input'));
+    await w.flush();
+    expect(w.document.querySelectorAll('.item')).toHaveLength(4);
+    expect(w.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('toggle de arquivados mostra apenas os arquivados', async () => {
+    const w = await boot(fixtureListings);
+    const t = w.document.getElementById('f-arch');
+    t.checked = true;
+    t.dispatchEvent(new w.Event('change'));
+    expect(w.document.querySelectorAll('.item')).toHaveLength(1);
+    expect(w.document.querySelector('.item').textContent).toContain('Anúncio arquivado');
   });
 
   it('renderiza preço e marca/modelo nos cartões', async () => {
