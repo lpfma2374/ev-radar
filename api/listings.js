@@ -85,7 +85,6 @@ export default async function handler(req, res) {
     // Modo compativel (data-quality, integracoes): mesma semantica dos filtros anteriores
     const min = Math.max(0, parseInt(sp.get("min") || "12000", 10) || 12000);
     const max = Math.min(100000, parseInt(sp.get("max") || "30000", 10) || 30000);
-bca069 (Intervalo de preco 12.000-30.000 EUR por defeito (frontend + API))
     const brand = BRANDS.includes(sp.get("brand")) ? sp.get("brand") : "all";
     const source = sp.get("source") || "all";
     const showArchived = sp.get("archived") === "1";
