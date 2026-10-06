@@ -129,11 +129,11 @@
     </div>
     <div class="f">
       <label for="f-min">Preço mín. (€)</label>
-      <input type="number" id="f-min" value="15000" min="0" step="500">
+      <input type="number" id="f-min" value="12000" min="0" step="500">
     </div>
     <div class="f">
       <label for="f-max">Preço máx. (€)</label>
-      <input type="number" id="f-max" value="25000" min="0" step="500">
+      <input type="number" id="f-max" value="30000" min="0" step="500">
     </div>
     <div class="f">
       <label for="f-city">Cidade</label>
@@ -235,8 +235,8 @@ async function load() {
 
 function resetFilters() {
   $("f-brand").value = "all";
-  $("f-min").value = "15000";
-  $("f-max").value = "25000";
+  $("f-min").value = "12000";
+  $("f-max").value = "30000";
   $("f-src").value = "all";
   $("f-city").value = "all";
   $("f-arch").checked = false;
